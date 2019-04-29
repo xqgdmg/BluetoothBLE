@@ -2,6 +2,19 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="com.example.bluetoothble">
 
+    <!--使用蓝牙所需要的权限-->
+    <uses-permission android:name="android.permission.BLUETOOTH" />
+    <!--使用扫描和设置蓝牙的权限（申明这一个权限必须申明上面一个权限）-->
+    <uses-permission android:name="android.permission.BLUETOOTH_ADMIN" />
+    <!--在 Android 6.0 及以上，还需要打开位置权限。如果应用没有位置权限，蓝牙扫描功能 不能使用-->
+    <!-- 6.0位置权限需要动java代码中态获取-->
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+
+    <!--无交互的进行操作, API>=19添加 -->
+    <uses-permission android:name="android.permission.BLUETOOTH_PRIVILEGED" />
+    <!--如果你想必须在支持ble 的设备上使用app 可以加上这一句-->
+    <!--<uses-feature android:name="android.hardware.bluetooth_le" android:required="true"/> -->
+
     <application
         android:allowBackup="true"
         android:icon="@mipmap/ic_launcher"
