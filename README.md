@@ -22,3 +22,5 @@ BluetoothGattService <br/>
 
 BluetoothGattCharacteristic <br/>
 这个类对应上面提到的 Characteristic。通过这个类定义需要往外围设备写入的数据和读取外围设备发送过来的数据。<br/><br/>
+
+<br/><br/>device.getName()总是返回 null，很尴尬<br/><br/>

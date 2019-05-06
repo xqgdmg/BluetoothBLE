@@ -13,7 +13,7 @@
     <!--无交互的进行操作, API>=19添加 -->
     <uses-permission android:name="android.permission.BLUETOOTH_PRIVILEGED" />
     <!--如果你想必须在支持ble 的设备上使用app 可以加上这一句-->
-    <!--<uses-feature android:name="android.hardware.bluetooth_le" android:required="true"/> -->
+    <uses-feature android:name="android.hardware.bluetooth_le" android:required="true"/>
 
     <application
         android:allowBackup="true"

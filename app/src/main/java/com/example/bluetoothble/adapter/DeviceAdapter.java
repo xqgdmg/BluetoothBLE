@@ -44,9 +44,30 @@ public class DeviceAdapter extends RecyclerView.Adapter<DeviceViewHolder> {
 
     @NonNull
     @Override
-    public DeviceViewHolder onCreateViewHolder(@NonNull ViewGroup viewGroup, int position) {
+    public DeviceViewHolder onCreateViewHolder(@NonNull ViewGroup viewGroup, final int position) {
         View itemView = LayoutInflater.from(mContext).inflate(R.layout.item_device,viewGroup,false);
-        return new DeviceViewHolder(itemView);
+        final DeviceViewHolder deviceViewHolder = new DeviceViewHolder(itemView);
+        deviceViewHolder.itemView.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                //触发自定义监听的单击事件
+                onItemClickListener.onItemClick(deviceViewHolder.itemView,position);
+            }
+        });
+        return deviceViewHolder;
+    }
+
+    public void setOnItemClickListener(DeviceAdapter.OnItemClickListener onItemClickListener){
+        this.onItemClickListener = onItemClickListener;
+    }
+
+    private OnItemClickListener onItemClickListener;
+
+    /**
+     * 自定义监听回调，RecyclerView 的 单击事件
+     */
+    public interface OnItemClickListener {
+        void onItemClick(View view, int position);
     }
 
     @Override
