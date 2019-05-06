@@ -30,7 +30,7 @@ import java.util.UUID;
 public class MainActivity extends AppCompatActivity {
 
     private static final int REQUEST_BLUETOOTH_ENABLE = 2;
-    private static final long SCAN_PERIOD = 5000;
+    private static final long SCAN_PERIOD = 10000;
     private BluetoothAdapter mBluetoothAdapter;
     private boolean mScanning;// 是否正在扫描
 
@@ -49,6 +49,7 @@ public class MainActivity extends AppCompatActivity {
 
     // 搜索到的蓝牙设备列表
     ArrayList<DeviceBean> mDeviceList = new ArrayList<DeviceBean>();
+    ArrayList<DeviceBean> mDeviceListFinal = new ArrayList<DeviceBean>();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -63,8 +64,6 @@ public class MainActivity extends AppCompatActivity {
         //2. 判断当前蓝牙状态
         checkBluetoothStatus();
 
-        // 3. 开始扫描 或者 停止扫描
-        scanLeDevice(true);
 
     }
 
@@ -72,7 +71,7 @@ public class MainActivity extends AppCompatActivity {
         mRecyclerView = (RecyclerView) findViewById(R.id.recyclerView);
 
         mRecyclerView.setLayoutManager(new LinearLayoutManager(MainActivity.this));
-        mDeviceAdapter = new DeviceAdapter(MainActivity.this,mDeviceList);
+        mDeviceAdapter = new DeviceAdapter(MainActivity.this, mDeviceListFinal);
         mRecyclerView.setAdapter(mDeviceAdapter);
         mRecyclerView.setHasFixedSize(true);
     }
@@ -83,12 +82,12 @@ public class MainActivity extends AppCompatActivity {
     private boolean connect(String address) {
         if (mBluetoothAdapter == null || address == null) {
             Toast.makeText(MainActivity.this,
-                    "BluetoothAdapter未初始化或者连接的Adress不存在",Toast.LENGTH_SHORT).show();
+                    "BluetoothAdapter未初始化或者连接的Adress不存在", Toast.LENGTH_SHORT).show();
             return false;
         }
         BluetoothDevice device = mBluetoothAdapter.getRemoteDevice(address);
         if (device == null) {
-            Toast.makeText(MainActivity.this,"蓝牙设备未找到，无法建立连接",Toast.LENGTH_SHORT).show();
+            Toast.makeText(MainActivity.this, "蓝牙设备未找到，无法建立连接", Toast.LENGTH_SHORT).show();
             return false;
         }
 
@@ -106,26 +105,26 @@ public class MainActivity extends AppCompatActivity {
     }
 
     /*
-     * 扫描之后的回调
+     * 扫描之后的回调，这里的扫描有很多重复的
      */
     //  mBluetoothAdapter.startLeScan(mLeScanCallback); //开始搜索
     // mBluetoothAdapter.stopLeScan(mLeScanCallback);//停止搜索
     BluetoothAdapter.LeScanCallback mLeScanCallback = new BluetoothAdapter.LeScanCallback() {
         @Override
         public void onLeScan(BluetoothDevice device, int rssi, byte[] scanRecord) {
+
             //扫描结果回调  不要在这里处理耗时动作
-            Log.e("chris","发现设备：name=" + device.getName() + "address=" + device.getAddress());
-            Log.e("chris","rssi=" + rssi);
-            for(byte stringRecord : scanRecord){
-                ;Log.e("chris","scanRecord=" + stringRecord);
-            }
+            Log.e("chris", "发现设备：name=" + device.getName() + "address=" + device.getAddress());
+//            Log.e("chris", "rssi=" + rssi);
+//            for (byte stringRecord : scanRecord) {
+//                Log.e("chris", "scanRecord=" + stringRecord);
+//            }
 
             // 填充设备列表数据
-            DeviceBean deviceBean = new DeviceBean(device.getName(),device.getAddress());
+            DeviceBean deviceBean = new DeviceBean(device.getName(), device.getAddress());
             mDeviceList.add(deviceBean);
 
-            // TODO: 2019/4/29 这里需要一个列表去展示发现的设备列表，这样会每扫描到一条就刷新列表吗？
-            mDeviceAdapter.notifyDataSetChanged();
+
 
         }
     };
@@ -145,13 +144,33 @@ public class MainActivity extends AppCompatActivity {
             scanHandler.postDelayed(new Runnable() {
                 @Override
                 public void run() {
+                    // 超出扫描时间后停止搜索
                     mScanning = false;
-                    mBluetoothAdapter.stopLeScan(mLeScanCallback);  //停止搜索
+                    mBluetoothAdapter.stopLeScan(mLeScanCallback);
+
+                    // 对扫描出来的数据去重并且防止每扫描到一条就刷新列表 mDeviceListFinal
+                    for (int i = 0; i < mDeviceList.size(); i++) {
+                        DeviceBean deviceBean = mDeviceList.get(i);
+                        if (!mDeviceListFinal.contains(deviceBean)){
+                            mDeviceListFinal.add(deviceBean);
+                        }
+                    }
+
+                    Log.e("chris","mDeviceList.size()=="+mDeviceList.size());
+                    Log.e("chris","mDeviceListFinal.size()=="+mDeviceListFinal.size());
+                    // 展示发现的设备列表
+                    Toast.makeText(MainActivity.this,"已发现蓝牙"+mDeviceListFinal.size()+"个",Toast.LENGTH_SHORT).show();
+                    mDeviceAdapter.notifyDataSetChanged();
                 }
             }, SCAN_PERIOD);
-            mBluetoothAdapter.startLeScan(mLeScanCallback); //开始搜索
+
+            // 开始搜索
+            mBluetoothAdapter.startLeScan(mLeScanCallback);
+            Toast.makeText(MainActivity.this,"开始搜索，请等待"+SCAN_PERIOD+"毫秒",Toast.LENGTH_SHORT).show();
         } else {
-            mBluetoothAdapter.stopLeScan(mLeScanCallback);//停止搜索
+            // 停止搜索
+            mBluetoothAdapter.stopLeScan(mLeScanCallback);
+            Toast.makeText(MainActivity.this,"停止搜索",Toast.LENGTH_SHORT).show();
         }
     }
 
@@ -162,9 +181,12 @@ public class MainActivity extends AppCompatActivity {
         if (mBluetoothAdapter.isEnabled()) {//判断是否打开蓝牙
             //mBluetoothAdapter.enable();//无交互打开蓝牙
 
+            // 3. 开始扫描 或者 停止扫描
+            scanLeDevice(true);
+
+        } else {
             //系统提示用户选择是否打开蓝牙
             startActivityForResult(new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE), REQUEST_BLUETOOTH_ENABLE);
-
         }
 
 
@@ -178,8 +200,11 @@ public class MainActivity extends AppCompatActivity {
             if (resultCode == RESULT_OK) {
                 //打开成功
                 Toast.makeText(MainActivity.this, "打开蓝牙成功", Toast.LENGTH_SHORT).show();
+
+                // 3. 开始扫描 或者 停止扫描
+                scanLeDevice(true);
             } else {
-                Toast.makeText(MainActivity.this, "打开蓝牙失败", Toast.LENGTH_SHORT).show();
+                Toast.makeText(MainActivity.this, "打开蓝牙失败，无法使用蓝牙功能", Toast.LENGTH_SHORT).show();
             }
         }
     }
@@ -196,7 +221,7 @@ public class MainActivity extends AppCompatActivity {
         }
 
         //还有一种兼容的获取方法
-//        BluetoothAdapter adapter = BluetoothAdapter.getDefaultAdapter();
+//        mBluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
     }
 
     /*
@@ -213,12 +238,12 @@ public class MainActivity extends AppCompatActivity {
 
             switch (newState) {
                 case BluetoothProfile.STATE_CONNECTED:
-                    Log.e("chris","蓝牙已连接");
+                    Log.e("chris", "蓝牙已连接");
                     mConnectionState = true;
                     mBluetoothGatt.discoverServices();//连上蓝牙就可以对服务进行查找发现
                     break;
                 case BluetoothProfile.STATE_DISCONNECTED:
-                    Log.e("chris","蓝牙未连接");
+                    Log.e("chris", "蓝牙未连接");
                     mConnectionState = false;
                     mBluetoothGatt.close();//关键 如果断开蓝牙时没有释放资源会导致 133 错误
                     break;
@@ -232,7 +257,7 @@ public class MainActivity extends AppCompatActivity {
         @Override
         public void onServicesDiscovered(BluetoothGatt gatt, int status) {
             super.onServicesDiscovered(gatt, status);
-            Toast.makeText(MainActivity.this,"发现服务",Toast.LENGTH_SHORT).show();
+            Toast.makeText(MainActivity.this, "发现服务", Toast.LENGTH_SHORT).show();
 
             //打开读写服务
             BluetoothGattService readerService = mBluetoothGatt.getService(WRITESERVICE);
@@ -254,7 +279,7 @@ public class MainActivity extends AppCompatActivity {
         public void onCharacteristicRead(BluetoothGatt gatt, BluetoothGattCharacteristic characteristic, int status) {
             super.onCharacteristicRead(gatt, characteristic, status);
             Toast.makeText(MainActivity.this,
-                    "onCharacteristicRead characteristic=" + characteristic,Toast.LENGTH_SHORT).show();
+                    "onCharacteristicRead characteristic=" + characteristic, Toast.LENGTH_SHORT).show();
         }
 
         @Override

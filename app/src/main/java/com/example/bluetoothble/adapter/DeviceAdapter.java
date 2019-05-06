@@ -4,6 +4,7 @@ import android.content.Context;
 import android.support.annotation.NonNull;
 import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.RecyclerView.ViewHolder;
+import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
@@ -17,6 +18,15 @@ import java.util.List;
 
 /**
  * 扫描出来的蓝牙设备列表
+ * RecyclerView子View宽度不能全屏的问题，在Adapter的onCreateViewHolder创建子view的时候要把parent传进去; 
+ *
+ * 正确写法
+ *
+ * LayoutInflater.from(context).inflate(R.layout.item_view,parent,false);
+ *
+ * 错误写法
+ *
+ * LayoutInflater.from(context).inflate(R.layout.item_view,null);
  *
  * @author cWX708605
  * @version [V6.0.0.1, 2019/4/29]
@@ -35,9 +45,8 @@ public class DeviceAdapter extends RecyclerView.Adapter<DeviceViewHolder> {
     @NonNull
     @Override
     public DeviceViewHolder onCreateViewHolder(@NonNull ViewGroup viewGroup, int position) {
-        View itemView = View.inflate(mContext, R.layout.item_device,null);
-        DeviceViewHolder deviceViewHolder = new DeviceViewHolder(itemView);
-        return deviceViewHolder;
+        View itemView = LayoutInflater.from(mContext).inflate(R.layout.item_device,viewGroup,false);
+        return new DeviceViewHolder(itemView);
     }
 
     @Override
