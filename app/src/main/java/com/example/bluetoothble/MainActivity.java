@@ -34,7 +34,7 @@ import java.util.UUID;
 public class MainActivity extends AppCompatActivity {
 
     private static final int REQUEST_BLUETOOTH_ENABLE = 2;
-    private static final long SCAN_PERIOD = 60000;
+    private static final long SCAN_PERIOD = 30000;
     private BluetoothAdapter mBluetoothAdapter;
     private boolean mScanning;// 是否正在扫描
 
@@ -53,7 +53,6 @@ public class MainActivity extends AppCompatActivity {
 
     // 搜索到的蓝牙设备列表
     ArrayList<DeviceBean> mDeviceList = new ArrayList<DeviceBean>();
-    ArrayList<DeviceBean> mDeviceListFinal = new ArrayList<DeviceBean>();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -75,14 +74,14 @@ public class MainActivity extends AppCompatActivity {
         mRecyclerView = (RecyclerView) findViewById(R.id.recyclerView);
 
         mRecyclerView.setLayoutManager(new LinearLayoutManager(MainActivity.this));
-        mDeviceAdapter = new DeviceAdapter(MainActivity.this, mDeviceListFinal);
+        mDeviceAdapter = new DeviceAdapter(MainActivity.this, mDeviceList);
         mRecyclerView.setAdapter(mDeviceAdapter);
         mRecyclerView.setHasFixedSize(true);
 
         mDeviceAdapter.setOnItemClickListener(new OnItemClickListener() {
             @Override
             public void onItemClick(View view, int position) {
-                DeviceBean deviceBean = mDeviceListFinal.get(position);
+                DeviceBean deviceBean = mDeviceList.get(position);
                 boolean connect = connect(deviceBean.getAdreess());
                 Log.e("chris","connect=="+connect);
             }
@@ -110,8 +109,6 @@ public class MainActivity extends AppCompatActivity {
             mBluetoothGatt = null;
         }
         mBluetoothGatt = device.connectGatt(getApplication(), false, mGattCallback); //该函数才是真正的去进行连接
-//        mBluetoothGatt.connect();
-//        mlog.e("Trying to create a new connection.");
         mBluetoothDeviceAddress = address;
         mConnectionState = true;
         Toast.makeText(MainActivity.this, device.getName()+"", Toast.LENGTH_SHORT).show();
@@ -135,15 +132,12 @@ public class MainActivity extends AppCompatActivity {
 
             //扫描结果回调  不要在这里处理耗时动作
             Log.e("chris", "发现设备：name=" + deviceName + "address=" + device.getAddress());
-//            Log.e("chris", "rssi=" + rssi);
-//            for (byte stringRecord : scanRecord) {
-//                Log.e("chris", "scanRecord=" + stringRecord);
-//            }
 
-            // 填充设备列表数据
+            // 填充设备列表数据，不管重复还是不重复
             DeviceBean deviceBean = new DeviceBean(deviceName, device.getAddress());
             mDeviceList.add(deviceBean);
 
+            mDeviceAdapter.notifyDataSetChanged();
 
         }
     };
@@ -167,31 +161,35 @@ public class MainActivity extends AppCompatActivity {
                     mScanning = false;
                     mBluetoothAdapter.stopLeScan(mLeScanCallback);
 
-                    // 对扫描出来的数据去重并且防止每扫描到一条就刷新列表 mDeviceListFinal
-                    for (int i = 0; i < mDeviceList.size(); i++) {
-                        DeviceBean deviceBean = mDeviceList.get(i);
-                        if (!mDeviceListFinal.contains(deviceBean)) {
-                            mDeviceListFinal.add(deviceBean);
-                        }
-                    }
-
-                    Log.e("chris", "mDeviceList.size()==" + mDeviceList.size());
-                    Log.e("chris", "mDeviceListFinal.size()==" + mDeviceListFinal.size());
-                    // 展示发现的设备列表
-                    Toast.makeText(MainActivity.this, "已发现蓝牙" + mDeviceListFinal.size() + "个", Toast.LENGTH_SHORT).show();
-                    mDeviceAdapter.notifyDataSetChanged();
                 }
             }, SCAN_PERIOD);
 
             // 开始搜索
             mBluetoothAdapter.startLeScan(mLeScanCallback);
-            Toast.makeText(MainActivity.this, "开始搜索，请等待" + SCAN_PERIOD + "毫秒", Toast.LENGTH_SHORT).show();
         } else {
             // 停止搜索
             mBluetoothAdapter.stopLeScan(mLeScanCallback);
             Toast.makeText(MainActivity.this, "停止搜索", Toast.LENGTH_SHORT).show();
         }
     }
+
+    /*
+     * 对扫描出来的数据去重
+     */
+//    private void scanAndNotRedundant() {
+//        for (int i = 0; i < mDeviceList.size(); i++) {
+//            DeviceBean deviceBean = mDeviceList.get(i);
+//            if (!mDeviceListFinal.contains(deviceBean)) {
+//                mDeviceListFinal.add(deviceBean);
+//            }
+//        }
+//
+//        Log.e("chris", "mDeviceList.size()==" + mDeviceList.size());
+//        Log.e("chris", "mDeviceListFinal.size()==" + mDeviceListFinal.size());
+//        // 展示发现的设备列表
+//        Toast.makeText(MainActivity.this, "已发现蓝牙" + mDeviceListFinal.size() + "个", Toast.LENGTH_SHORT).show();
+//        mDeviceAdapter.notifyDataSetChanged();
+//    }
 
     /*
      * 2. 判断当前蓝牙状态
