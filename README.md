@@ -25,5 +25,5 @@ BluetoothGattCharacteristic <br/>
 
 ...
 
-#总结：
+# 总结：
 * 1.device.getName()总是返回 null，手机蓝牙有问题。。。
